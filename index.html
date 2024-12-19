@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Conway's Game of Life</title>
+    <style>
+        /* Set grid size and style */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(30, 20px);
+            grid-gap: 1px;
+            background-color: #ccc;
+        }
+
+        /* Cell styling */
+        .cell {
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border: 1px solid #ddd;
+            transition: background-color 0.2s;
+        }
+
+        .alive {
+            background-color: black;
+        }
+
+        /* Control button styling */
+        .controls {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Controls for the game -->
+    <div class="controls">
+        <button id="randomize">Randomize</button>
+        <button id="play">Play</button>
+        <button id="pause">Pause</button>
+    </div>
+
+    <!-- Grid for the game -->
+    <div id="grid" class="grid"></div>
+
+    <script>
+        const gridSize = 30; // 30x30 grid
+        const gridElement = document.getElementById("grid");
+        const playButton = document.getElementById("play");
+        const pauseButton = document.getElementById("pause");
+        const randomizeButton = document.getElementById("randomize");
+
+        let grid = [];
+        let running = false;
+        let intervalId = null;
+
+        // Create the grid
+        function createGrid() {
+            grid = [];
+            gridElement.innerHTML = ''; // Clear existing content
+
+            for (let row = 0; row < gridSize; row++) {
+                const rowArray = [];
+                for (let col = 0; col < gridSize; col++) {
+                    const cell = document.createElement("div");
+                    cell.classList.add("cell");
+                    cell.addEventListener("click", () => toggleCell(row, col));
+                    rowArray.push(cell);
+                    gridElement.appendChild(cell);
+                }
+                grid.push(rowArray);
+            }
+        }
+
+        // Toggle the state of a cell
+        function toggleCell(row, col) {
+            grid[row][col].classList.toggle("alive");
+        }
+
+        // Randomize the grid
+        function randomizeGrid() {
+            for (let row = 0; row < gridSize; row++) {
+                for (let col = 0; col < gridSize; col++) {
+                    const isAlive = Math.random() < 0.5;
+                    grid[row][col].classList.toggle("alive", isAlive);
+                }
+            }
+        }
+
+        // Get the number of alive neighbors for a given cell
+        function getAliveNeighbors(row, col) {
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],        [0, 1],
+                [1, -1], [1, 0], [1, 1]
+            ];
+
+            let aliveCount = 0;
+
+            for (const [dRow, dCol] of directions) {
+                const newRow = row + dRow;
+                const newCol = col + dCol;
+
+                if (newRow >= 0 && newRow < gridSize &&
+                    newCol >= 0 && newCol < gridSize &&
+                    grid[newRow][newCol].classList.contains("alive")) {
+                    aliveCount++;
+                }
+            }
+
+            return aliveCount;
+        }
+
+        // Update the grid for the next generation
+        function updateGrid() {
+            const newGrid = grid.map((row, rowIndex) =>
+                row.map((cell, colIndex) => {
+                    const isAlive = cell.classList.contains("alive");
+                    const aliveNeighbors = getAliveNeighbors(rowIndex, colIndex);
+
+                    if (isAlive) {
+                        // A live cell stays alive with 2 or 3 neighbors
+                        return (aliveNeighbors === 2 || aliveNeighbors === 3);
+                    } else {
+                        // A dead cell becomes alive with exactly 3 neighbors
+                        return (aliveNeighbors === 3);
+                    }
+                })
+            );
+
+            newGrid.forEach((row, rowIndex) => {
+                row.forEach((shouldLive, colIndex) => {
+                    grid[rowIndex][colIndex].classList.toggle("alive", shouldLive);
+                });
+            });
+        }
+
+        // Start the simulation
+        function play() {
+            if (!running) {
+                running = true;
+                intervalId = setInterval(updateGrid, 300); // Update every 300 ms
+            }
+        }
+
+        // Pause the simulation
+        function pause() {
+            if (running) {
+                running = false;
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        }
+
+        // Initialize the grid and add event listeners
+        createGrid();
+        randomizeButton.addEventListener("click", randomizeGrid);
+        playButton.addEventListener("click", play)
